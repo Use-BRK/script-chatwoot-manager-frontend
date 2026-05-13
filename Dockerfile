@@ -14,6 +14,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json next.config.mjs postcss.config.js tailwind.config.ts tsconfig.json ./
 COPY src ./src
+COPY public ./public
 
 # Variáveis de build — o EasyPanel injeta via env vars do serviço.
 # Next.js exige que NEXT_PUBLIC_* estejam presentes em BUILD TIME.
