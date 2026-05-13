@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Boxes,
   Check,
+  FolderSearch,
   Loader2,
   Plus,
   ShieldCheck,
@@ -227,25 +228,38 @@ export default function SetupPage() {
                 </Field>
               </div>
 
-              {/* ── Multi-path chips ── */}
+              {/* ── Multi-path com auto-fetch ── */}
               <Field
                 label="Pastas dos scripts"
-                hint="Adicione uma pasta por vez; vazio = raiz do repositório"
+                hint={`Clique em "Carregar pastas" para buscar do repositório, ou adicione manualmente`}
               >
                 <div className="space-y-2">
-                  {/* Chips */}
+                  {/* Botão para carregar pastas do repo */}
+                  <FolderFetcher
+                    form={form}
+                    currentPaths={currentPaths}
+                    addPath={(p: string) => {
+                      const existing = form.getValues("scriptsPaths") ?? [];
+                      if (!existing.includes(p)) {
+                        form.setValue("scriptsPaths", [...existing, p], { shouldDirty: true });
+                      }
+                    }}
+                    removePath={removePath}
+                  />
+                  {/* Chips das pastas selecionadas */}
                   {currentPaths.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {currentPaths.map((p) => (
                         <span
                           key={p}
-                          className="flex items-center gap-1 rounded-full border border-border bg-slate-3 px-2.5 py-0.5 font-mono text-xs text-slate-12"
+                          className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-xs text-primary"
                         >
+                          <Check className="h-3 w-3" />
                           {p}
                           <button
                             type="button"
                             onClick={() => removePath(p)}
-                            className="ml-0.5 rounded-full text-slate-9 hover:text-destructive-text"
+                            className="ml-0.5 rounded-full text-primary/60 hover:text-destructive-text"
                             aria-label={`Remover ${p}`}
                           >
                             <X className="h-3 w-3" />
@@ -254,7 +268,7 @@ export default function SetupPage() {
                       ))}
                     </div>
                   )}
-                  {/* Input de novo path */}
+                  {/* Input manual (fallback) */}
                   <div className="flex gap-1.5">
                     <Input
                       value={pathInput}
@@ -265,7 +279,7 @@ export default function SetupPage() {
                           addPath();
                         }
                       }}
-                      placeholder="ex: chatwoot-notifications"
+                      placeholder="ou digite manualmente…"
                       className="h-8 text-xs font-mono"
                     />
                     <Button
@@ -419,6 +433,112 @@ function TestStatus({ state, label }: { state: TestState; label: string }) {
             ? state.detail
             : state.detail}
       </div>
+    </div>
+  );
+}
+
+type FolderFetcherProps = {
+  form: ReturnType<typeof useForm<AppConfig>>;
+  currentPaths: string[];
+  addPath: (p: string) => void;
+  removePath: (p: string) => void;
+};
+
+function FolderFetcher({ form, currentPaths, addPath, removePath }: FolderFetcherProps) {
+  const [dirs, setDirs] = React.useState<string[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [fetched, setFetched] = React.useState(false);
+
+  const handleFetch = async () => {
+    const token = form.getValues("githubToken");
+    const repo = form.getValues("repository");
+    const branch = form.getValues("branch") || "main";
+
+    if (!token || !repo) {
+      setError("Preencha Token e Repositório antes de carregar pastas");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const client = new GitHubClient({
+        githubToken: token,
+        repository: repo,
+        branch,
+        scriptsPaths: [],
+        bundleApiUrl: form.getValues("bundleApiUrl") || "https://placeholder.test",
+        bundleApiKey: form.getValues("bundleApiKey") || "placeholder",
+        stripComments: false,
+      });
+      const result = await client.listRootDirectories();
+      setDirs(result);
+      setFetched(true);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFolder = (folder: string) => {
+    if (currentPaths.includes(folder)) {
+      removePath(folder);
+    } else {
+      addPath(folder);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1.5 text-xs"
+        onClick={handleFetch}
+        disabled={loading}
+      >
+        {loading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <FolderSearch className="h-3.5 w-3.5" />
+        )}
+        {loading ? "Buscando…" : "Carregar pastas do repositório"}
+      </Button>
+
+      {error && (
+        <p className="text-xs text-destructive-text">{error}</p>
+      )}
+
+      {fetched && dirs.length === 0 && !error && (
+        <p className="text-xs text-slate-11">Nenhuma pasta encontrada na raiz do repositório.</p>
+      )}
+
+      {dirs.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {dirs.map((dir) => {
+            const selected = currentPaths.includes(dir);
+            return (
+              <button
+                key={dir}
+                type="button"
+                onClick={() => toggleFolder(dir)}
+                className={cn(
+                  "flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-xs transition-colors",
+                  selected
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border bg-slate-3 text-slate-11 hover:border-primary/30 hover:bg-primary/5 hover:text-slate-12",
+                )}
+              >
+                {selected && <Check className="h-3 w-3" />}
+                {dir}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

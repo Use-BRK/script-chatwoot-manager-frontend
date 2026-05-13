@@ -127,6 +127,29 @@ export class GitHubClient {
     }
   }
 
+  /**
+   * Lista todas as pastas (diretórios) na raiz do repositório.
+   * Usado na tela de setup para o usuário selecionar pastas
+   * sem precisar digitar manualmente.
+   */
+  async listRootDirectories(): Promise<string[]> {
+    try {
+      const { data } = await this.octokit.repos.getContent({
+        owner: this.owner,
+        repo: this.repo,
+        path: "",
+        ref: this.branch,
+      });
+      if (!Array.isArray(data)) return [];
+      return data
+        .filter((item) => item.type === "dir")
+        .map((item) => item.name)
+        .sort((a, b) => a.localeCompare(b));
+    } catch (err) {
+      throw wrapError(err, `${this.owner}/${this.repo}@${this.branch}:/`);
+    }
+  }
+
   async listScripts(basePath?: string): Promise<ScriptListItem[]> {
     const resolvedPath = basePath ?? (this.basePaths[0] ?? "");
     try {
