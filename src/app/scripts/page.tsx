@@ -81,8 +81,7 @@ export default function ScriptsPage() {
     scriptEnabled.setEnabled(toggledPath, nextActive);
     setTogglingPath(toggledPath);
 
-    const scriptName =
-      scriptTitles.getTitle(toggledPath) || toggledPath.split("/").pop();
+    const scriptName = toggledPath.split("/").slice(-2).join("/") || toggledPath;
 
     try {
       // 2. Determina quais scripts ficam ativos APÓS a mudança
