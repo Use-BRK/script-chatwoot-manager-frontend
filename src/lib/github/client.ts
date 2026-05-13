@@ -241,7 +241,10 @@ export class GitHubClient {
     sha?: string;
     message?: string;
   }): Promise<SaveFileResult> {
-    const { path, content, sha, message } = opts;
+    // Sanitiza: remove barras iniciais pra evitar criar pasta literal "/"
+    const path = opts.path.replace(/^\/+/, "");
+    const { content, sha, message } = opts;
+    if (!path) throw new GitHubError("Path do arquivo não pode ser vazio", 400);
     try {
       const { data } = await this.octokit.repos.createOrUpdateFileContents({
         owner: this.owner,

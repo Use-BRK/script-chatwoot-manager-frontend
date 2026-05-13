@@ -264,7 +264,10 @@ export default function ScriptsPage() {
           description: `${fullPath} criado no GitHub.`,
         });
         setCreateOpen(false);
-        list.refetch();
+        // NÃO chamar list.refetch() aqui — o hook useCreateScript já
+        // adicionou o item ao cache de forma otimista. Refetch iria
+        // sobrescrever com a resposta da API que pode ainda não ter
+        // o arquivo (eventual consistency do GitHub).
       },
       onError: (err) => {
         toast({
