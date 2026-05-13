@@ -7,7 +7,7 @@ import {
   clearConfig,
   readEnvOverrides,
 } from "@/lib/config/storage";
-import type { AppConfig } from "@/lib/config/schema";
+import { configSchema, type AppConfig } from "@/lib/config/schema";
 
 export function useConfig() {
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -15,8 +15,28 @@ export function useConfig() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setConfig(loadConfig());
-    setEnvOverrides(readEnvOverrides());
+    const env = readEnvOverrides();
+    setEnvOverrides(env);
+
+    let loaded = loadConfig();
+
+    // Se não tem config salva mas as env vars têm todos os campos obrigatórios,
+    // cria e salva automaticamente — pula o /setup.
+    if (!loaded && env.githubToken && env.repository && env.bundleApiUrl && env.bundleApiKey) {
+      const candidate = {
+        branch: "main",
+        scriptsPaths: [],
+        stripComments: false,
+        ...env,
+      };
+      const parsed = configSchema.safeParse(candidate);
+      if (parsed.success) {
+        save(parsed.data);
+        loaded = parsed.data;
+      }
+    }
+
+    setConfig(loaded);
     setHydrated(true);
   }, []);
 

@@ -362,7 +362,7 @@ function ScriptCard({
         isActive ? "border-border" : "border-border/50 opacity-60",
       )}
     >
-      {/* Título editável */}
+      {/* Título editável + nome da pasta */}
       <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5">
         {isEditingTitle ? (
           <TitleInput
@@ -373,16 +373,23 @@ function ScriptCard({
           />
         ) : (
           <>
-            <span
-              className={cn(
-                "flex-1 truncate text-sm",
-                title
-                  ? "font-semibold text-foreground"
-                  : "italic text-slate-9",
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span
+                className={cn(
+                  "truncate text-sm",
+                  title
+                    ? "font-semibold text-foreground"
+                    : "italic text-slate-9",
+                )}
+              >
+                {title || "Sem título — clique no lápis para adicionar"}
+              </span>
+              {item.folder && (
+                <span className="truncate text-[11px] font-mono text-slate-9">
+                  📁 {item.folder}
+                </span>
               )}
-            >
-              {title || "Sem título — clique no lápis para adicionar"}
-            </span>
+            </div>
             <button
               type="button"
               onClick={(e) => {
