@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="pt-BR" class="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>BRK — Design System</title>
+    <link rel="stylesheet" href="./design-system.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 40px 32px 80px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        header .eyebrow {
+            color: rgb(var(--slate-11));
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        header h1 {
+            margin: 4px 0 0;
+            font-size: 30px;
+            line-height: 36px;
+            font-weight: 500;
+            color: rgb(var(--slate-12));
+        }
+
+        header p.lead {
+            margin: 12px 0 0;
+            max-width: 58ch;
+            color: rgb(var(--slate-11));
+            font-size: 14px;
+            line-height: 22px;
+            font-weight: 400;
+        }
+
+        .toggle {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            background: rgb(var(--solid-2));
+            border: 1px solid rgb(var(--border-weak));
+            border-radius: 9999px;
+        }
+
+        .toggle button {
+            all: unset;
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgb(var(--slate-11));
+        }
+
+        .toggle button.active {
+            background: rgb(var(--blue-9));
+            color: #fff;
+        }
+
+        section {
+            margin-top: 48px;
+        }
+
+        section>h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+            font-weight: 600;
+            color: rgb(var(--slate-12));
+            letter-spacing: -0.01em;
+        }
+
+        section>p.desc {
+            margin: 0 0 20px;
+            color: rgb(var(--slate-11));
+            font-size: 13px;
+            line-height: 20px;
+            max-width: 64ch;
+        }
+
+        /* Color scale grid */
+        .scale {
+            display: grid;
+            grid-template-columns: 140px repeat(12, 1fr);
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .scale .name {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgb(var(--slate-11));
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .swatch {
+            aspect-ratio: 1/1;
+            border-radius: 6px;
+            border: 1px solid rgb(var(--border-weak));
+            position: relative;
+            cursor: copy;
+            transition: transform 120ms var(--ease-out);
+        }
+
+        .swatch:hover {
+            transform: translateY(-2px);
+        }
+
+        .swatch .step {
+            position: absolute;
+            inset: auto 6px 4px auto;
+            font-size: 9px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, .9);
+            mix-blend-mode: difference;
+        }
+
+        /* Semantic grid */
+        .sem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .sem-card {
+            border: 1px solid rgb(var(--border-weak));
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgb(var(--solid-1));
+        }
+
+        .sem-card .preview {
+            height: 64px;
+        }
+
+        .sem-card .meta {
+            padding: 12px 14px;
+            font-size: 12px;
+        }
+
+        .sem-card .meta .k {
+            color: rgb(var(--slate-12));
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sem-card .meta .v {
+            color: rgb(var(--slate-11));
+            margin: 2px 0 0;
+            font-family: ui-monospace, Menlo, monospace;
+            font-size: 11px;
+        }
+
+        /* Typography rows */
+        .type-row {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 20px;
+            padding: 16px 0;
+            border-top: 1px dashed rgb(var(--border-weak));
+        }
+
+        .type-row:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .type-row .tag {
+            font-size: 12px;
+            color: rgb(var(--slate-11));
+            font-family: ui-monospace, Menlo, monospace;
+        }
+
+        .type-row .tag strong {
+            display: block;
+            color: rgb(var(--slate-12));
+            font-family: var(--font-sans);
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .sample-display {
+            font-size: 30px;
+            line-height: 36px;
+            font-weight: 500;
+            color: rgb(var(--slate-12));
+        }
+
+        .sample-title {
+            font-size: 16px;
+            line-height: 24px;
+            font-weight: 600;
+            color: rgb(var(--slate-12));
+        }
+
+        .sample-body {
+            font-size: 14px;
+            line-height: 24px;
+            font-weight: 400;
+            color: rgb(var(--slate-11));
+        }
+
+        .sample-small {
+            font-size: 11px;
+            line-height: 16px;
+            font-weight: 500;
+            color: rgb(var(--slate-10));
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        /* Radius / shadow / components */
+        .rr {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .rr .box {
+            width: 110px;
+            height: 110px;
+            background: rgb(var(--solid-1));
+            border: 1px solid rgb(var(--border-weak));
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 8px;
+            font-size: 11px;
+            color: rgb(var(--slate-11));
+            font-family: ui-monospace, Menlo, monospace;
+        }
+
+        .sh {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .sh .box {
+            background: rgb(var(--solid-1));
+            border-radius: 10px;
+            padding: 18px;
+            font-size: 12px;
+            color: rgb(var(--slate-11));
+        }
+
+        /* Components */
+        .comp {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgb(var(--solid-1));
+            border: 1px solid rgb(var(--border-weak));
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h3 {
+            margin: 0 0 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgb(var(--slate-11));
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .btn {
+            appearance: none;
+            border: 0;
+            font: 500 14px/1 var(--font-sans);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 100ms var(--ease-out);
+        }
+
+        .btn+.btn {
+            margin-left: 8px;
+        }
+
+        .btn-primary {
+            background: rgb(var(--blue-9));
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: rgb(var(--blue-10));
+        }
+
+        .btn-secondary {
+            background: rgb(var(--solid-2));
+            color: rgb(var(--slate-12));
+            border: 1px solid rgb(var(--border-weak));
+        }
+
+        .btn-secondary:hover {
+            background: rgb(var(--solid-3));
+        }
+
+        .btn-danger {
+            background: rgb(var(--ruby-9));
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: rgb(var(--slate-11));
+        }
+
+        .btn-ghost:hover {
+            background: rgb(var(--solid-2));
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 12px;
+            font-weight: 500;
+            color: rgb(var(--slate-11));
+        }
+
+        .field input {
+            font: 400 14px var(--font-sans);
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: rgb(var(--solid-2));
+            color: rgb(var(--slate-12));
+            border: 1px solid rgb(var(--border-weak));
+            outline: none;
+        }
+
+        .field input:focus {
+            border-color: rgb(var(--blue-9));
+            box-shadow: 0 0 0 3px rgba(var(--border-blue));
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge.success {
+            background: rgb(var(--teal-3));
+            color: rgb(var(--teal-11));
+        }
+
+        .badge.warning {
+            background: rgb(var(--amber-3));
+            color: rgb(var(--amber-11));
+        }
+
+        .badge.danger {
+            background: rgb(var(--ruby-3));
+            color: rgb(var(--ruby-11));
+        }
+
+        .badge.info {
+            background: rgb(var(--blue-3));
+            color: rgb(var(--blue-11));
+        }
+
+        .badge.neutral {
+            background: rgb(var(--slate-3));
+            color: rgb(var(--slate-11));
+        }
+
+        .alert {
+            display: flex;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 20px;
+        }
+
+        .alert.info {
+            background: rgb(var(--solid-blue));
+            color: rgb(var(--text-blue));
+            border: 1px solid rgba(var(--border-blue));
+        }
+
+        .alert.warning {
+            background: rgb(var(--solid-amber));
+            color: rgb(var(--amber-11));
+        }
+
+        .alert.danger {
+            background: rgb(var(--ruby-3));
+            color: rgb(var(--ruby-11));
+            border: 1px solid rgb(var(--ruby-6));
+        }
+
+        footer {
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid rgb(var(--border-weak));
+            color: rgb(var(--slate-10));
+            font-size: 12px;
+        }
+
+        code {
+            font-family: ui-monospace, Menlo, monospace;
+            font-size: 12px;
+            background: rgb(var(--solid-2));
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: rgb(var(--slate-12));
+        }
+
+        .toast {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: rgb(var(--slate-12));
+            color: rgb(var(--slate-1));
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: all 180ms var(--ease-out);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <header>
+            <div>
+                <div class="eyebrow">Design System</div>
+                <h1>BRK / Chatwoot</h1>
+                <p class="lead">Captura completa de tokens e estilos da instância em <code>chat.usebrk.com.br</code>.
+                    Sistema baseado em Radix Colors (escalas 1–12), com suporte nativo a modo claro e escuro via classe
+                    <code>.dark</code> no <code>&lt;html&gt;</code>.</p>
+            </div>
+            <div class="toggle" role="group" aria-label="Alternar tema">
+                <button id="btn-light" class="active" onclick="setTheme('light')">Claro</button>
+                <button id="btn-dark" onclick="setTheme('dark')">Escuro</button>
+            </div>
+        </header>
+
+        <!-- TIPOGRAFIA -->
+        <section>
+            <h2>Tipografia</h2>
+            <p class="desc">Font stack do sistema operacional — sem web fonts. Os tamanhos abaixo são os observados na
+                aplicação (tela de login).</p>
+            <div>
+                <div class="type-row">
+                    <div class="tag"><strong>Display / H1–H2</strong>30px · 500 · 36px</div>
+                    <div class="sample-display">Centralize seus canais de atendimento</div>
+                </div>
+                <div class="type-row">
+                    <div class="tag"><strong>Title / H3</strong>16px · 600 · 24px</div>
+                    <div class="sample-title">Configurações da sua caixa de entrada</div>
+                </div>
+                <div class="type-row">
+                    <div class="tag"><strong>Body</strong>14px · 400 · 24px</div>
+                    <div class="sample-body">Atenda clientes por WhatsApp, e-mail, chat ao vivo e redes sociais, tudo em
+                        uma única caixa de entrada com automações, relatórios e histórico unificado.</div>
+                </div>
+                <div class="type-row">
+                    <div class="tag"><strong>Label / XS</strong>11px · 500 · 16px</div>
+                    <div class="sample-small">Novo · Em produção · Atualizado agora</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PALETAS -->
+        <section>
+            <h2>Paleta — Escalas 1→12</h2>
+            <p class="desc">Cada escala segue a convenção Radix: 1–2 fundos sutis, 3–5 superfícies tingidas, 6–8 bordas,
+                9–10 acentos sólidos, 11–12 texto. Clique em qualquer cor para copiar o token.</p>
+            <div id="scales"></div>
+        </section>
+
+        <!-- SEMÂNTICOS -->
+        <section>
+            <h2>Tokens semânticos</h2>
+            <p class="desc">Usados diretamente na UI para superfícies, bordas e overlays — referenciam as escalas via
+                tema ativo.</p>
+            <div class="sem-grid" id="semantics"></div>
+        </section>
+
+        <!-- RAIOS -->
+        <section>
+            <h2>Raios de borda</h2>
+            <div class="rr">
+                <div class="box" style="border-radius:6px">6px · inputs</div>
+                <div class="box" style="border-radius:8px">8px · botões</div>
+                <div class="box" style="border-radius:10px">10px · cards</div>
+                <div class="box" style="border-radius:9999px">full · pílulas</div>
+            </div>
+        </section>
+
+        <!-- SOMBRAS -->
+        <section>
+            <h2>Sombras</h2>
+            <div class="sh">
+                <div class="box" style="box-shadow: var(--shadow-xs)">
+                    shadow-xs<br><code>0 1px 2px rgba(0,0,0,.05)</code></div>
+                <div class="box" style="box-shadow: var(--shadow-md)">shadow-md<br><code>lg drop + 4px soft</code></div>
+                <div class="box" style="box-shadow: var(--shadow-blue-glow)">blue-glow<br><code>foco primário</code>
+                </div>
+                <div class="box" style="box-shadow: var(--shadow-ruby-glow)">ruby-glow<br><code>alerta</code></div>
+            </div>
+        </section>
+
+        <!-- COMPONENTES -->
+        <section>
+            <h2>Componentes</h2>
+            <div class="comp">
+                <div class="panel">
+                    <h3>Botões</h3>
+                    <button class="btn btn-primary">Entrar</button>
+                    <button class="btn btn-secondary">Cancelar</button>
+                    <div style="height:12px"></div>
+                    <button class="btn btn-danger">Excluir</button>
+                    <button class="btn btn-ghost">Voltar</button>
+                </div>
+                <div class="panel">
+                    <h3>Formulário</h3>
+                    <div class="field"><label>E-mail</label><input value="luizsilva@usebrk.com.br"></div>
+                    <div style="height:12px"></div>
+                    <div class="field"><label>Senha</label><input type="password" value="••••••••••"></div>
+                    <div style="height:14px"></div>
+                    <button class="btn btn-primary" style="width:100%">Fazer login</button>
+                </div>
+                <div class="panel">
+                    <h3>Badges</h3>
+                    <span class="badge success">Resolvido</span>
+                    <span class="badge info">Em andamento</span>
+                    <span class="badge warning">Pendente</span>
+                    <span class="badge danger">Falhou</span>
+                    <span class="badge neutral">Rascunho</span>
+                </div>
+                <div class="panel">
+                    <h3>Alertas</h3>
+                    <div class="alert info">Conversa atribuída ao atendente Luiz.</div>
+                    <div style="height:8px"></div>
+                    <div class="alert warning">Seu token expira em 3 dias.</div>
+                    <div style="height:8px"></div>
+                    <div class="alert danger">Falha ao sincronizar com WhatsApp.</div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            Arquivos acompanhantes: <code>design-system.css</code> · <code>tokens.json</code><br>
+            Valores extraídos em 2026-04-24 direto do CSS compilado em <code>chat.usebrk.com.br</code>. Modo claro é
+            padrão; adicione a classe <code>dark</code> ao <code>&lt;html&gt;</code> para alternar.
+        </footer>
+    </div>
+
+    <div class="toast" id="toast">Copiado</div>
+
+    <script>
+        const scales = ['slate', 'gray', 'blue', 'iris', 'teal', 'amber', 'ruby'];
+        const scalesEl = document.getElementById('scales');
+        scales.forEach(name => {
+            const row = document.createElement('div');
+            row.className = 'scale';
+            row.innerHTML = `<div class="name">${name}</div>` + Array.from({ length: 12 }, (_, i) => {
+                const step = i + 1;
+                return `<div class="swatch" data-token="--${name}-${step}" style="background: rgb(var(--${name}-${step}))"><span class="step">${step}</span></div>`;
+            }).join('');
+            scalesEl.appendChild(row);
+        });
+
+        const semantics = [
+            ['--background-color', 'Fundo da aplicação'],
+            ['--solid-1', 'Superfície 1 (card)'],
+            ['--solid-2', 'Superfície 2 (sidebar)'],
+            ['--solid-3', 'Superfície 3 (hover)'],
+            ['--solid-active', 'Superfície ativa'],
+            ['--solid-blue', 'Superfície tingida (info)'],
+            ['--solid-iris', 'Superfície tingida (iris)'],
+            ['--solid-amber', 'Superfície tingida (warn)'],
+            ['--border-weak', 'Borda sutil'],
+            ['--border-strong', 'Borda enfatizada'],
+            ['--text-blue', 'Texto link'],
+            ['--slate-12', 'Texto primário'],
+            ['--slate-11', 'Texto secundário'],
+            ['--slate-10', 'Texto terciário']
+        ];
+        const semEl = document.getElementById('semantics');
+        semantics.forEach(([token, label]) => {
+            const c = document.createElement('div');
+            c.className = 'sem-card';
+            c.dataset.token = token;
+            const isAlpha = token.includes('alpha');
+            c.innerHTML = `
+      <div class="preview" style="background: rgb(var(${token}))"></div>
+      <div class="meta"><p class="k">${label}</p><p class="v">var(${token})</p></div>
+    `;
+            semEl.appendChild(c);
+        });
+
+        function setTheme(t) {
+            const root = document.documentElement;
+            root.classList.toggle('dark', t === 'dark');
+            root.classList.toggle('light', t === 'light');
+            document.getElementById('btn-light').classList.toggle('active', t === 'light');
+            document.getElementById('btn-dark').classList.toggle('active', t === 'dark');
+        }
+
+        const toast = document.getElementById('toast');
+        let toastTimer;
+        document.addEventListener('click', e => {
+            const s = e.target.closest('[data-token]');
+            if (!s) return;
+            const token = s.dataset.token;
+            navigator.clipboard?.writeText(`var(${token})`);
+            toast.textContent = `Copiado: var(${token})`;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+        });
+    </script>
+</body>
+
+</html>

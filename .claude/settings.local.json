@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api *)",
+      "Bash(curl -s -o /tmp/u.json -w 'HTTP %{http_code}\\\\n' -H 'Authorization: Bearer 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' -H 'X-GitHub-Api-Version: 2022-11-28' https://api.github.com/user)",
+      "Read(//tmp/**)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('items:',[\\(i.get\\('name'\\),i.get\\('type'\\)\\) for i in d]\\) if isinstance\\(d,list\\) else print\\('error:', d.get\\('message'\\)\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(git -C ../api-code-bundle-packaged rev-parse --show-toplevel)",
+      "Bash(git -C \"../api-code-bundle-packaged\" status)",
+      "Bash(git -C \"../api-code-bundle-packaged\" remote -v)",
+      "Bash(git -C \"../api-code-bundle-packaged\" log --oneline -3)",
+      "Bash(git -C \"../frontend\" status)",
+      "Bash(git -C \"../frontend\" remote -v)",
+      "Bash(git -C \"../frontend\" log --oneline -3)",
+      "Bash(git -C \"/c/Users/conta/OneDrive/Área de Trabalho/Gerenciador de Scripts Chatwoot/frontend\" rev-parse --show-toplevel)",
+      "Bash(git -C \"/c/Users/conta/OneDrive/Área de Trabalho/Gerenciador de Scripts Chatwoot/frontend\" status -- src/components/bundle/bundle-modal.tsx)",
+      "Bash(git *)"
+    ]
+  }
+}
