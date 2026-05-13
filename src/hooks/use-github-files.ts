@@ -105,12 +105,7 @@ export function useCreateScript(config: AppConfig | null) {
     onSuccess: (result, filename) => {
       if (!config) return;
       // Reconstrói o ScriptListItem a partir do input + resposta do GitHub
-      const trimmed = filename.trim().replace(/^\/+/, "");
-      const path = trimmed.includes("/")
-        ? trimmed
-        : config.scriptsPaths[0]
-          ? `${config.scriptsPaths[0]}/${trimmed}`
-          : trimmed;
+      const path = filename.trim().replace(/^\/+/, "");
       const slashIdx = path.lastIndexOf("/");
       const name = slashIdx >= 0 ? path.slice(slashIdx + 1) : path;
       const folder = slashIdx >= 0 ? path.slice(0, slashIdx) : "";

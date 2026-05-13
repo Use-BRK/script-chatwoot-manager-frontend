@@ -264,8 +264,11 @@ export class GitHubClient {
   }
 
   /**
-   * Aceita tanto um nome simples (`foo.js` → vai pra primeira pasta configurada)
-   * quanto um path completo (`pasta/foo.js` → cria exatamente nessa pasta).
+   * Cria um arquivo no path exato informado.
+   * Se o input contém `/`, usa como path completo (`pasta/foo.js`).
+   * Se não contém `/`, cria na raiz do repo (`foo.js`).
+   *
+   * O chamador é responsável por montar o path completo com a pasta desejada.
    *
    * Faz pré-check de existência: se o arquivo já existe na branch, falha com
    * mensagem clara antes de tentar o PUT (que devolveria 422 críptico).
@@ -276,9 +279,8 @@ export class GitHubClient {
     if (!isJsFile(filename)) {
       throw new GitHubError("Arquivo precisa terminar em .js", 400);
     }
-    const path = trimmed.includes("/")
-      ? trimmed
-      : joinPath(this.basePaths[0] ?? "", filename);
+    // Usa o path exatamente como informado — sem auto-prepend de basePaths
+    const path = trimmed;
 
     // Pré-check: getContent. 200 = existe → erro claro. 404 = livre → segue.
     try {

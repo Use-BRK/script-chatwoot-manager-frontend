@@ -8,6 +8,7 @@ import {
   Code2,
   FileCode2,
   FolderOpen,
+  FolderPlus,
   Loader2,
   Plus,
   RefreshCw,
@@ -63,6 +64,8 @@ export default function ScriptsPage() {
   const [createOpen, setCreateOpen] = React.useState(false);
   const [newScriptName, setNewScriptName] = React.useState("");
   const [newScriptFolder, setNewScriptFolder] = React.useState("");
+  const [creatingNewFolder, setCreatingNewFolder] = React.useState(false);
+  const [newFolderName, setNewFolderName] = React.useState("");
 
   /** Pastas carregadas automaticamente do GitHub */
   const [repoDirs, setRepoDirs] = React.useState<string[]>([]);
@@ -240,7 +243,9 @@ export default function ScriptsPage() {
 
   const handleCreateScript = () => {
     setNewScriptName("");
-    setNewScriptFolder(allFolders.length > 1 ? allFolders[1] : "");
+    setNewScriptFolder("");
+    setCreatingNewFolder(false);
+    setNewFolderName("");
     setCreateOpen(true);
   };
 
@@ -456,34 +461,82 @@ export default function ScriptsPage() {
 
           <div className="space-y-4 py-2">
             {/* Seleção de pasta */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Pasta</Label>
-              {allFolders.length > 1 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {allFolders.map((folder) => {
-                    const selected = newScriptFolder === folder;
-                    return (
-                      <button
-                        key={folder || "__root__"}
-                        type="button"
-                        onClick={() => setNewScriptFolder(folder)}
-                        className={cn(
-                          "flex items-center gap-1 rounded-full border px-3 py-1 font-mono text-xs transition-colors",
-                          selected
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : "border-border bg-slate-3 text-slate-11 hover:border-primary/30 hover:bg-primary/5 hover:text-slate-12",
-                        )}
-                      >
-                        <FolderOpen className="h-3 w-3" />
-                        {folder || "/ (raiz)"}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-11">
-                  Nenhuma pasta detectada — o script será criado na raiz.
-                </p>
+              <div className="flex flex-wrap gap-1.5">
+                {/* Opção raiz — sempre presente */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewScriptFolder("");
+                    setCreatingNewFolder(false);
+                  }}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full border px-3 py-1 font-mono text-xs transition-colors",
+                    newScriptFolder === "" && !creatingNewFolder
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border bg-slate-3 text-slate-11 hover:border-primary/30 hover:bg-primary/5 hover:text-slate-12",
+                  )}
+                >
+                  <FolderOpen className="h-3 w-3" />
+                  / (raiz)
+                </button>
+
+                {/* Pastas existentes */}
+                {allFolders.filter(f => f !== "").map((folder) => {
+                  const selected = newScriptFolder === folder && !creatingNewFolder;
+                  return (
+                    <button
+                      key={folder}
+                      type="button"
+                      onClick={() => {
+                        setNewScriptFolder(folder);
+                        setCreatingNewFolder(false);
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 rounded-full border px-3 py-1 font-mono text-xs transition-colors",
+                        selected
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border bg-slate-3 text-slate-11 hover:border-primary/30 hover:bg-primary/5 hover:text-slate-12",
+                      )}
+                    >
+                      <FolderOpen className="h-3 w-3" />
+                      {folder}
+                    </button>
+                  );
+                })}
+
+                {/* Botão nova pasta */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatingNewFolder(true);
+                    setNewFolderName("");
+                  }}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition-colors",
+                    creatingNewFolder
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-dashed border-border text-slate-11 hover:border-primary/30 hover:bg-primary/5 hover:text-slate-12",
+                  )}
+                >
+                  <FolderPlus className="h-3 w-3" />
+                  Nova pasta
+                </button>
+              </div>
+
+              {/* Input para nome da nova pasta */}
+              {creatingNewFolder && (
+                <Input
+                  value={newFolderName}
+                  onChange={(e) => {
+                    setNewFolderName(e.target.value);
+                    setNewScriptFolder(e.target.value.trim().replace(/^\/|\/$/g, ""));
+                  }}
+                  placeholder="nome-da-pasta"
+                  className="h-8 font-mono text-xs"
+                  autoFocus
+                />
               )}
             </div>
 
