@@ -7,7 +7,6 @@ import {
   Boxes,
   FileCode2,
   Loader2,
-  Pencil,
   RefreshCw,
   Search,
   TriangleAlert,
@@ -25,7 +24,6 @@ import {
   useReadAllScripts,
 } from "@/hooks/use-github-files";
 import { useDeployBundle } from "@/hooks/use-bundle-deploy";
-import { useScriptTitles } from "@/hooks/use-script-titles";
 import { useScriptEnabled } from "@/hooks/use-script-enabled";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -39,13 +37,9 @@ export default function ScriptsPage() {
   const list = useScriptList(config);
   const readAll = useReadAllScripts(config);
   const deploy = useDeployBundle(config);
-  const scriptTitles = useScriptTitles(config?.repository, config?.branch);
   const scriptEnabled = useScriptEnabled(config?.repository, config?.branch);
 
   const [query, setQuery] = React.useState("");
-  const [editingTitlePath, setEditingTitlePath] = React.useState<string | null>(
-    null,
-  );
   const [bundleOpen, setBundleOpen] = React.useState(false);
   /** Path do script sendo togglado (pra mostrar loading naquele card) */
   const [togglingPath, setTogglingPath] = React.useState<string | null>(null);
@@ -60,14 +54,12 @@ export default function ScriptsPage() {
     if (!query) return items;
     const q = query.toLowerCase();
     return items.filter((i) => {
-      const title = scriptTitles.getTitle(i.path) ?? "";
       return (
         i.name.toLowerCase().includes(q) ||
-        (i.folder ?? "").toLowerCase().includes(q) ||
-        title.toLowerCase().includes(q)
+        (i.folder ?? "").toLowerCase().includes(q)
       );
     });
-  }, [items, query, scriptTitles]);
+  }, [items, query]);
 
   if (!hydrated || !config) {
     return (
@@ -178,15 +170,7 @@ export default function ScriptsPage() {
     list.refetch();
   };
 
-  const handleSaveTitle = (path: string, title: string) => {
-    setEditingTitlePath(null);
-    const trimmed = title.trim();
-    if (!trimmed) {
-      scriptTitles.removeTitle(path);
-    } else {
-      scriptTitles.setTitle(path, trimmed);
-    }
-  };
+
 
   const activeCount = items.filter((i) =>
     scriptEnabled.isEnabled(i.path),
@@ -297,19 +281,13 @@ export default function ScriptsPage() {
           ) : (
             <div className="space-y-3">
               {filtered.map((item) => {
-                const title = scriptTitles.getTitle(item.path);
                 const enabled = scriptEnabled.isEnabled(item.path);
                 const isToggling = togglingPath === item.path;
                 return (
                   <ScriptCard
                     key={item.path}
                     item={item}
-                    title={title}
                     isActive={enabled}
-                    isEditingTitle={editingTitlePath === item.path}
-                    onStartEditTitle={() => setEditingTitlePath(item.path)}
-                    onSaveTitle={(t) => handleSaveTitle(item.path, t)}
-                    onCancelEditTitle={() => setEditingTitlePath(null)}
                     onToggle={(next) => handleToggle(item.path, next)}
                     isToggling={isToggling}
                     isDeploying={isDeploying}
@@ -332,23 +310,13 @@ export default function ScriptsPage() {
 
 function ScriptCard({
   item,
-  title,
   isActive,
-  isEditingTitle,
-  onStartEditTitle,
-  onSaveTitle,
-  onCancelEditTitle,
   onToggle,
   isToggling,
   isDeploying,
 }: {
   item: ScriptListItem;
-  title: string | null;
   isActive: boolean;
-  isEditingTitle: boolean;
-  onStartEditTitle: () => void;
-  onSaveTitle: (title: string) => void;
-  onCancelEditTitle: () => void;
   onToggle: (next: boolean) => void;
   isToggling: boolean;
   isDeploying: boolean;
@@ -362,49 +330,16 @@ function ScriptCard({
         isActive ? "border-border" : "border-border/50 opacity-60",
       )}
     >
-      {/* Título editável + nome da pasta */}
+      {/* Nome da pasta (principal) + nome do script */}
       <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5">
-        {isEditingTitle ? (
-          <TitleInput
-            initialValue={title ?? ""}
-            placeholder="Adicionar título..."
-            onSubmit={onSaveTitle}
-            onCancel={onCancelEditTitle}
-          />
-        ) : (
-          <>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span
-                className={cn(
-                  "truncate text-sm",
-                  title
-                    ? "font-semibold text-foreground"
-                    : "italic text-slate-9",
-                )}
-              >
-                {title || "Sem título — clique no lápis para adicionar"}
-              </span>
-              {item.folder && (
-                <span className="truncate text-[11px] font-mono text-slate-9">
-                  📁 {item.folder}
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onStartEditTitle();
-              }}
-              className="shrink-0 rounded-sm p-1 text-slate-9 opacity-0 transition-opacity hover:bg-slate-4 hover:text-slate-12 group-hover:opacity-100"
-              aria-label="Editar título"
-              title="Editar título"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-sm font-semibold text-foreground">
+            {item.folder || item.name}
+          </span>
+          <span className="truncate text-[11px] font-mono text-slate-9">
+            {item.name}
+          </span>
+        </div>
       </div>
 
       {/* Ações do card */}
@@ -441,52 +376,3 @@ function ScriptCard({
   );
 }
 
-function TitleInput({
-  initialValue,
-  placeholder,
-  onSubmit,
-  onCancel,
-}: {
-  initialValue: string;
-  placeholder: string;
-  onSubmit: (value: string) => void;
-  onCancel: () => void;
-}) {
-  const [value, setValue] = React.useState(initialValue);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const submittedRef = React.useRef(false);
-
-  React.useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-    input.focus();
-    input.select();
-  }, []);
-
-  const tryCommit = () => {
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-    onSubmit(value);
-  };
-
-  return (
-    <input
-      ref={inputRef}
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          tryCommit();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          submittedRef.current = true;
-          onCancel();
-        }
-      }}
-      onBlur={tryCommit}
-      placeholder={placeholder}
-      className="h-7 flex-1 rounded-md border border-accent bg-background px-2 text-sm outline-none focus:ring-1 focus:ring-accent"
-    />
-  );
-}
