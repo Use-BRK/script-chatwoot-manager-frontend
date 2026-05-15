@@ -9,6 +9,7 @@ import {
   FileCode2,
   FolderOpen,
   FolderPlus,
+  LayoutDashboard,
   Loader2,
   Plus,
   RefreshCw,
@@ -347,6 +348,17 @@ export default function ScriptsPage() {
               <Link href={items.length > 0 ? `/scripts/edit/${encodeURIComponent(items[0].path)}` : "/scripts/edit/_"}>
                 <Code2 className="h-3.5 w-3.5" />
                 Abrir Editor
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="gap-1.5"
+            >
+              <Link href="/embeddings">
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Embeddings
               </Link>
             </Button>
             {dirsLoading && (

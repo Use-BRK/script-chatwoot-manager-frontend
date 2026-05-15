@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Cog, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function TopBar({ onDeploy, deployDisabled }: Props) {
+  const router = useRouter();
   const { config } = useConfig();
   const embeddings = config?.embeddings ?? [];
 
@@ -31,9 +33,7 @@ export function TopBar({ onDeploy, deployDisabled }: Props) {
                   key={e.id}
                   variant="ghost"
                   size="icon"
-                  onClick={() =>
-                    window.open(e.url, "_blank", "noopener,noreferrer")
-                  }
+                  onClick={() => router.push(`/embeddings?id=${e.id}`)}
                   aria-label={e.title}
                   title={e.title}
                 >
