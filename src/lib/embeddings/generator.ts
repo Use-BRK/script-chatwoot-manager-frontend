@@ -7,9 +7,6 @@ export const EMBEDDINGS_SCRIPT_NAME = "embeddings/embeddings.gen.js";
  * Gera o userscript que injeta os embeddings configurados como itens do
  * menu lateral de Configurações do Chatwoot. Cada item abre um <iframe>
  * em painel fixo sobreposto, à direita do sidebar.
- *
- * Baseado no script de exemplo "brk-mgr" — adaptado para múltiplos
- * embeddings dinâmicos e para SVGs do Iconify (com viewBox próprio).
  */
 export function generateEmbeddingsScript(embeddings: Embedding[]): string {
   const tools = embeddings.map((e) => ({
@@ -69,13 +66,19 @@ export function generateEmbeddingsScript(embeddings: Embedding[]): string {
 
   async function checkIsAdmin() {
     const auth = getAuthToken();
-    if (!auth || !auth['access-token']) return false;
+    if (!auth || !auth['access-token']) {
+      console.warn('[brk-emb] sem token de auth — script nao sera injetado');
+      return false;
+    }
     try {
       const res = await fetch('/api/v1/profile', { headers: { 'access-token': auth['access-token'], 'client': auth['client'], 'uid': auth['uid'] } });
       if (!res.ok) return false;
       const data = await res.json();
       return data.role === 'administrator' || data.type === 'SuperAdmin';
-    } catch (err) { return false; }
+    } catch (err) {
+      console.warn('[brk-emb] erro ao checar admin:', err);
+      return false;
+    }
   }
 
   function openPanel(url) {
@@ -94,14 +97,14 @@ export function generateEmbeddingsScript(embeddings: Embedding[]): string {
     const iframe = document.getElementById('brk-emb-iframe');
     if (panel) panel.classList.remove('visible');
     if (iframe) iframe.src = 'about:blank';
-    TOOLS.forEach(function (t) {
+    TOOLS.forEach(t => {
       const el = document.getElementById(t.id);
-      if (el) el.classList.remove.apply(el.classList, ACTIVE_CLASSES);
+      if (el) el.classList.remove(...ACTIVE_CLASSES);
     });
   }
 
   function setupNavObserver() {
-    const closeOnNav = function () {
+    const closeOnNav = () => {
       if (isPanelOpen && location.href !== lastUrl) closePanel();
       lastUrl = location.href;
     };
@@ -115,8 +118,10 @@ export function generateEmbeddingsScript(embeddings: Embedding[]): string {
   function applyIcon(svg, tool) {
     if (!svg) return;
     svg.setAttribute('viewBox', '0 0 ' + tool.iconWidth + ' ' + tool.iconHeight);
-    svg.setAttribute('width', '1em');
-    svg.setAttribute('height', '1em');
+    svg.setAttribute('fill', 'currentColor');
+    svg.removeAttribute('stroke-width');
+    svg.removeAttribute('stroke-linecap');
+    svg.removeAttribute('stroke-linejoin');
     svg.innerHTML = tool.iconBody;
   }
 
@@ -127,55 +132,47 @@ export function generateEmbeddingsScript(embeddings: Embedding[]): string {
     if (links.length === 0) return;
 
     if (isPanelOpen) {
-      links.forEach(function (a) {
-        if (TOOLS.some(function (t) { return t.id === a.id; })) return;
-        a.classList.remove.apply(a.classList, ACTIVE_CLASSES);
-        a.classList.remove('router-link-active', 'router-link-exact-active');
+      links.forEach(a => {
+        if (TOOLS.some(t => t.id === a.id)) return;
+        a.classList.remove(...ACTIVE_CLASSES, 'router-link-active', 'router-link-exact-active');
         a.removeAttribute('aria-current');
       });
-      TOOLS.forEach(function (t) {
+      TOOLS.forEach(t => {
         const el = document.getElementById(t.id);
-        if (el && !el.classList.contains('active')) el.classList.add.apply(el.classList, ACTIVE_CLASSES);
+        if (el && !el.classList.contains('active')) el.classList.add(...ACTIVE_CLASSES);
       });
     }
 
-    const refLink = links.find(function (l) {
-      return !l.classList.contains('active') && !l.getAttribute('aria-current');
-    }) || links[0];
+    const refLink = links.find(l => !l.classList.contains('active') && !l.getAttribute('aria-current')) || links[0];
     if (!refLink) return;
 
     const container = refLink.parentElement.tagName === 'LI'
       ? refLink.parentElement.parentElement
       : refLink.parentElement;
 
-    [].concat(TOOLS).reverse().forEach(function (tool) {
+    [...TOOLS].reverse().forEach(tool => {
       if (document.getElementById(tool.id)) return;
 
       const myItem = refLink.cloneNode(true);
       myItem.id = tool.id;
       myItem.href = '#';
-      myItem.classList.remove.apply(myItem.classList, ACTIVE_CLASSES);
-      myItem.classList.remove('router-link-active', 'router-link-exact-active');
+      myItem.classList.remove(...ACTIVE_CLASSES, 'router-link-active', 'router-link-exact-active');
       myItem.removeAttribute('aria-current');
       myItem.style.cursor = 'pointer';
 
-      const span = Array.from(myItem.querySelectorAll('*')).find(function (s) {
-        return s.childNodes.length === 1 && s.textContent.trim().length > 2;
-      });
+      const span = Array.from(myItem.querySelectorAll('*')).find(s => s.childNodes.length === 1 && s.textContent.trim().length > 2);
       if (span) span.textContent = tool.name;
 
       applyIcon(myItem.querySelector('svg'), tool);
 
       myItem.onclick = function (e) {
         e.preventDefault();
-        container.querySelectorAll('a').forEach(function (a) {
-          a.classList.remove.apply(a.classList, ACTIVE_CLASSES);
-        });
+        container.querySelectorAll('a').forEach(a => a.classList.remove(...ACTIVE_CLASSES));
         if (isPanelOpen) {
           closePanel();
         } else {
           openPanel(tool.url);
-          myItem.classList.add.apply(myItem.classList, ACTIVE_CLASSES);
+          myItem.classList.add(...ACTIVE_CLASSES);
         }
       };
 
@@ -192,7 +189,11 @@ export function generateEmbeddingsScript(embeddings: Embedding[]): string {
 
   async function init() {
     const isAdmin = await checkIsAdmin();
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      console.warn('[brk-emb] usuario nao e administrator — embeddings nao serao injetados');
+      return;
+    }
+    console.log('[brk-emb] iniciando — ' + TOOLS.length + ' embedding(s) configurado(s)');
     injectCss();
     createPanel();
     setupNavObserver();
