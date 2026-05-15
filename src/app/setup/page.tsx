@@ -450,13 +450,24 @@ function FolderFetcher({ form, currentPaths, addPath, removePath }: FolderFetche
   const [error, setError] = React.useState<string | null>(null);
   const [fetched, setFetched] = React.useState(false);
 
+  // Observa o token em tempo real para detectar campo vazio
+  const tokenValue = form.watch("githubToken");
+  const repoValue = form.watch("repository");
+  const tokenMissing = !tokenValue || tokenValue.trim() === "";
+
   const handleFetch = async () => {
+    // Relê os valores no momento do clique (garante valor atual do DOM)
     const token = form.getValues("githubToken");
     const repo = form.getValues("repository");
     const branch = form.getValues("branch") || "main";
 
-    if (!token || !repo) {
-      setError("Preencha Token e Repositório antes de carregar pastas");
+    if (!token || token.trim() === "") {
+      setError("O campo \"Personal Access Token\" está vazio. Browsers não restauram campos de senha automaticamente — reinsira o PAT antes de carregar as pastas.");
+      return;
+    }
+
+    if (!repo || repo.trim() === "") {
+      setError("Preencha o campo \"Repositório\" antes de carregar pastas.");
       return;
     }
 
@@ -464,9 +475,9 @@ function FolderFetcher({ form, currentPaths, addPath, removePath }: FolderFetche
     setError(null);
     try {
       const client = new GitHubClient({
-        githubToken: token,
-        repository: repo,
-        branch,
+        githubToken: token.trim(),
+        repository: repo.trim(),
+        branch: branch.trim(),
         scriptsPaths: [],
         bundleApiUrl: form.getValues("bundleApiUrl") || "https://placeholder.test",
         bundleApiKey: form.getValues("bundleApiKey") || "placeholder",
@@ -507,6 +518,13 @@ function FolderFetcher({ form, currentPaths, addPath, removePath }: FolderFetche
         )}
         {loading ? "Buscando…" : "Carregar pastas do repositório"}
       </Button>
+
+      {/* Aviso proativo quando o token não foi (re)inserido */}
+      {tokenMissing && !error && repoValue && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          ⚠️ O campo PAT está vazio. Browsers não restauram senhas automaticamente — reinsira o token antes de carregar as pastas.
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-destructive-text">{error}</p>
