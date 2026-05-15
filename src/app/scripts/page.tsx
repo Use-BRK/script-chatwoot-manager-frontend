@@ -42,6 +42,10 @@ import { useDeployBundle } from "@/hooks/use-bundle-deploy";
 import { useScriptEnabled } from "@/hooks/use-script-enabled";
 import { useToast } from "@/hooks/use-toast";
 import { GitHubClient } from "@/lib/github/client";
+import {
+  EMBEDDINGS_SCRIPT_NAME,
+  generateEmbeddingsScript,
+} from "@/lib/embeddings/generator";
 import { cn } from "@/lib/utils";
 import type { ScriptListItem } from "@/lib/github/types";
 
@@ -165,10 +169,19 @@ export default function ScriptsPage() {
         })
         .map((i) => i.path);
 
+      const embeddingsList = config?.embeddings ?? [];
+      const embeddingsEntry =
+        embeddingsList.length > 0
+          ? {
+              name: EMBEDDINGS_SCRIPT_NAME,
+              content: generateEmbeddingsScript(embeddingsList).trim(),
+            }
+          : null;
+
       if (activePaths.length === 0) {
-        // Deploy bundle vazio
+        const baseScripts = embeddingsEntry ? [embeddingsEntry] : [];
         await new Promise<void>((resolve, reject) => {
-          deploy.mutate([], {
+          deploy.mutate(baseScripts, {
             onSuccess: () => resolve(),
             onError: (err) => reject(err),
           });
@@ -176,7 +189,9 @@ export default function ScriptsPage() {
         toast({
           variant: "default",
           title: "Bundle atualizado",
-          description: `${scriptName} desativado. Nenhum script ativo — bundle vazio enviado.`,
+          description: embeddingsEntry
+            ? `${scriptName} desativado. Bundle contém apenas o userscript de embeddings.`
+            : `${scriptName} desativado. Nenhum script ativo — bundle vazio enviado.`,
         });
         setTogglingPath(null);
         return;
@@ -212,9 +227,14 @@ export default function ScriptsPage() {
         }))
         .filter((s) => s.content.length > 0);
 
+      // Userscript de embeddings entra junto com os scripts do GitHub
+      const finalScripts = embeddingsEntry
+        ? [...namedScripts, embeddingsEntry]
+        : namedScripts;
+
       // 5. Deploya
       await new Promise<void>((resolve, reject) => {
-        deploy.mutate(namedScripts, {
+        deploy.mutate(finalScripts, {
           onSuccess: () => resolve(),
           onError: (err) => reject(err),
         });

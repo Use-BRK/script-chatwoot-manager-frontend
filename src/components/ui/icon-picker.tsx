@@ -6,19 +6,24 @@ import { Loader2, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+export interface PickedIcon {
+  /** "prefix:name" — ex.: "fluent:home-24-regular" */
+  name: string;
+  /** Conteúdo SVG (paths) */
+  body: string;
+  width: number;
+  height: number;
+}
+
 interface IconPickerProps {
   value?: string;
-  onChange: (icon: string) => void;
+  onChange: (icon: PickedIcon) => void;
   /** Quantidade de ícones por busca. Default 96. */
   limit?: number;
 }
 
 const PREFIX = "fluent";
 
-/**
- * Sugestões iniciais variadas (quando a busca está vazia).
- * Termos que costumam render bem na coleção Fluent.
- */
 const SEED_QUERIES = [
   "home",
   "settings",
@@ -36,10 +41,25 @@ const SEED_QUERIES = [
   "rocket",
 ];
 
-/**
- * Picker de ícones Fluent System Icons (Microsoft) via API do Iconify.
- * Os SVGs são buscados on-demand pelo componente <Icon> do @iconify/react.
- */
+async function fetchIconData(fullName: string): Promise<PickedIcon | null> {
+  const [prefix, name] = fullName.split(":");
+  if (!prefix || !name) return null;
+  const url = `https://api.iconify.design/${prefix}.json?icons=${encodeURIComponent(name)}`;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const data = await r.json();
+  const defaultW = typeof data.width === "number" ? data.width : 24;
+  const defaultH = typeof data.height === "number" ? data.height : 24;
+  const entry = data.icons?.[name];
+  if (!entry || typeof entry.body !== "string") return null;
+  return {
+    name: fullName,
+    body: entry.body,
+    width: typeof entry.width === "number" ? entry.width : defaultW,
+    height: typeof entry.height === "number" ? entry.height : defaultH,
+  };
+}
+
 export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
   const [query, setQuery] = React.useState("");
   const [debounced, setDebounced] = React.useState("");
@@ -47,6 +67,7 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
   const [total, setTotal] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [resolving, setResolving] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const id = setTimeout(() => setDebounced(query.trim()), 250);
@@ -55,7 +76,6 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
 
   React.useEffect(() => {
     let cancelled = false;
-
     const run = async () => {
       setLoading(true);
       setError(null);
@@ -71,7 +91,6 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
           setIcons(Array.isArray(data.icons) ? data.icons : []);
           setTotal(typeof data.total === "number" ? data.total : 0);
         } else {
-          // Sem busca: pega 1 ícone variado de cada termo do seed
           const results = await Promise.all(
             SEED_QUERIES.map(async (term) => {
               const u = `https://api.iconify.design/search?query=${encodeURIComponent(
@@ -90,7 +109,6 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
           if (cancelled) return;
           const flat: string[] = [];
           for (const list of results) flat.push(...list);
-          // dedupe + limita
           const seen = new Set<string>();
           const dedup: string[] = [];
           for (const name of flat) {
@@ -112,12 +130,21 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
         if (!cancelled) setLoading(false);
       }
     };
-
     run();
     return () => {
       cancelled = true;
     };
   }, [debounced, limit]);
+
+  const selectIcon = async (name: string) => {
+    setResolving(name);
+    try {
+      const data = await fetchIconData(name);
+      if (data) onChange(data);
+    } finally {
+      setResolving(null);
+    }
+  };
 
   return (
     <div className="space-y-2">
@@ -169,12 +196,14 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
           <div className="grid grid-cols-8 gap-1">
             {icons.map((name) => {
               const selected = name === value;
+              const isResolving = name === resolving;
               return (
                 <button
                   key={name}
                   type="button"
-                  onClick={() => onChange(name)}
+                  onClick={() => selectIcon(name)}
                   title={name}
+                  disabled={isResolving}
                   className={cn(
                     "flex aspect-square items-center justify-center rounded-md border transition-colors",
                     selected
@@ -182,7 +211,11 @@ export function IconPicker({ value, onChange, limit = 96 }: IconPickerProps) {
                       : "border-transparent text-slate-11 hover:border-border hover:bg-slate-3 hover:text-foreground",
                   )}
                 >
-                  <Icon icon={name} className="h-5 w-5" />
+                  {isResolving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Icon icon={name} className="h-5 w-5" />
+                  )}
                 </button>
               );
             })}

@@ -13,14 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { IconPicker } from "@/components/ui/icon-picker";
+import { IconPicker, type PickedIcon } from "@/components/ui/icon-picker";
 import { useToast } from "@/hooks/use-toast";
 import type { Embedding } from "@/lib/config/schema";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Se preenchido, modo edição. */
   editing?: Embedding | null;
   onSubmit: (data: Omit<Embedding, "id"> & { id?: string }) => void;
 }
@@ -34,21 +33,28 @@ export function EmbeddingFormDialog({
   const { toast } = useToast();
   const [title, setTitle] = React.useState("");
   const [url, setUrl] = React.useState("");
-  const [icon, setIcon] = React.useState("");
+  const [picked, setPicked] = React.useState<PickedIcon | null>(null);
 
-  // Sincroniza ao abrir (e ao trocar embedding editado)
   React.useEffect(() => {
     if (open) {
       setTitle(editing?.title ?? "");
       setUrl(editing?.url ?? "");
-      setIcon(editing?.icon ?? "");
+      setPicked(
+        editing
+          ? {
+              name: editing.icon,
+              body: editing.iconBody,
+              width: editing.iconWidth,
+              height: editing.iconHeight,
+            }
+          : null,
+      );
     }
   }, [open, editing]);
 
   const handleSubmit = () => {
     const t = title.trim();
     const u = url.trim();
-    const i = icon.trim();
 
     if (!t) {
       toast({ variant: "destructive", title: "Informe o título" });
@@ -60,12 +66,24 @@ export function EmbeddingFormDialog({
       toast({ variant: "destructive", title: "URL inválida" });
       return;
     }
-    if (!i) {
-      toast({ variant: "destructive", title: "Escolha um ícone" });
+    if (!picked || !picked.body) {
+      toast({
+        variant: "destructive",
+        title: "Escolha um ícone",
+        description: "Clique no ícone na grade para selecioná-lo.",
+      });
       return;
     }
 
-    onSubmit({ id: editing?.id, title: t, url: u, icon: i });
+    onSubmit({
+      id: editing?.id,
+      title: t,
+      url: u,
+      icon: picked.name,
+      iconBody: picked.body,
+      iconWidth: picked.width,
+      iconHeight: picked.height,
+    });
   };
 
   return (
@@ -76,8 +94,8 @@ export function EmbeddingFormDialog({
             {editing ? "Editar embedding" : "Adicionar embedding"}
           </DialogTitle>
           <DialogDescription>
-            O título aparece como tooltip, o ícone é exibido na barra superior e
-            a URL é carregada num iframe interno.
+            O título aparece como rótulo no menu lateral do Chatwoot. Ao
+            clicar, abre a URL num iframe sobre o painel.
           </DialogDescription>
         </DialogHeader>
 
@@ -104,7 +122,7 @@ export function EmbeddingFormDialog({
 
           <div className="space-y-1.5">
             <Label>Ícone</Label>
-            <IconPicker value={icon} onChange={setIcon} />
+            <IconPicker value={picked?.name} onChange={setPicked} />
           </div>
         </div>
 

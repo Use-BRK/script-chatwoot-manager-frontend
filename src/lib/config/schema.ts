@@ -16,7 +16,12 @@ export const embeddingSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1, "Título obrigatório"),
   url: z.string().url("URL inválida"),
+  /** Nome do ícone no formato "prefix:name" (ex.: "fluent:home-24-regular"). */
   icon: z.string().min(1, "Ícone obrigatório"),
+  /** Conteúdo SVG (paths) do ícone — usado pra reconstruir o SVG no userscript. */
+  iconBody: z.string().default(""),
+  iconWidth: z.number().int().positive().default(24),
+  iconHeight: z.number().int().positive().default(24),
 });
 
 export type Embedding = z.infer<typeof embeddingSchema>;

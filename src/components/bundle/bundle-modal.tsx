@@ -21,6 +21,10 @@ import { useConfig } from "@/hooks/use-config";
 import { useReadAllScripts, useScriptList } from "@/hooks/use-github-files";
 import { useDeployBundle } from "@/hooks/use-bundle-deploy";
 import { generateBundle, computeStats } from "@/lib/bundle/generator";
+import {
+  EMBEDDINGS_SCRIPT_NAME,
+  generateEmbeddingsScript,
+} from "@/lib/embeddings/generator";
 import { useToast } from "@/hooks/use-toast";
 import { formatBytes } from "@/lib/utils";
 
@@ -72,14 +76,32 @@ export function BundleModal({ open, onOpenChange, liveOverrides }: Props) {
     [files, excluded],
   );
 
+  /** Script gerado a partir dos embeddings configurados (vazio se não há). */
+  const embeddingsScript = React.useMemo(() => {
+    const list = config?.embeddings ?? [];
+    if (list.length === 0) return null;
+    return {
+      name: EMBEDDINGS_SCRIPT_NAME,
+      path: EMBEDDINGS_SCRIPT_NAME,
+      content: generateEmbeddingsScript(list),
+    };
+  }, [config?.embeddings]);
+
+  /** Lista combinada: scripts do GitHub + userscript de embeddings (se houver). */
+  const allIncluded = React.useMemo(() => {
+    if (!embeddingsScript) return includedFiles;
+    if (excluded.has(EMBEDDINGS_SCRIPT_NAME)) return includedFiles;
+    return [...includedFiles, embeddingsScript];
+  }, [includedFiles, embeddingsScript, excluded]);
+
   const bundle = React.useMemo(
-    () => generateBundle(includedFiles, { stripComments: config?.stripComments }),
-    [includedFiles, config?.stripComments],
+    () => generateBundle(allIncluded, { stripComments: config?.stripComments }),
+    [allIncluded, config?.stripComments],
   );
 
   const stats = React.useMemo(
-    () => computeStats(bundle, includedFiles),
-    [bundle, includedFiles],
+    () => computeStats(bundle, allIncluded),
+    [bundle, allIncluded],
   );
 
   const toggle = (path: string) => {
@@ -100,7 +122,7 @@ export function BundleModal({ open, onOpenChange, liveOverrides }: Props) {
       });
       return;
     }
-    const namedScripts = includedFiles
+    const namedScripts = allIncluded
       .map((f) => ({
         name: f.path,
         content: (config?.stripComments
@@ -183,43 +205,73 @@ export function BundleModal({ open, onOpenChange, liveOverrides }: Props) {
               </p>
               <ScrollArea className="h-40 rounded-md border border-border bg-slate-2">
                 <ul className="divide-y divide-border">
-                  {files.length === 0 ? (
+                  {files.length === 0 && !embeddingsScript ? (
                     <li className="p-4 text-center text-xs text-slate-11">
                       Nenhum script encontrado
                     </li>
                   ) : (
-                    files.map((file) => {
-                      const isIncluded = !excluded.has(file.path);
-                      const id = `bundle-file-${file.path}`;
-                      // Mostra o path completo para distinguir script.js de pastas diferentes
-                      const displayPath = file.path;
-                      return (
+                    <>
+                      {files.map((file) => {
+                        const isIncluded = !excluded.has(file.path);
+                        const id = `bundle-file-${file.path}`;
+                        const displayPath = file.path;
+                        return (
+                          <li
+                            key={file.path}
+                            className="flex items-center justify-between gap-3 px-3 py-2"
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <Checkbox
+                                id={id}
+                                checked={isIncluded}
+                                onCheckedChange={() => toggle(file.path)}
+                              />
+                              <Label
+                                htmlFor={id}
+                                className="cursor-pointer truncate font-mono text-xs"
+                                title={displayPath}
+                              >
+                                {displayPath}
+                              </Label>
+                            </div>
+                            <span className="shrink-0 font-mono text-[11px] text-slate-11">
+                              {formatBytes(
+                                new TextEncoder().encode(file.content).length,
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                      {embeddingsScript && (
                         <li
-                          key={file.path}
+                          key={embeddingsScript.path}
                           className="flex items-center justify-between gap-3 px-3 py-2"
                         >
                           <div className="flex min-w-0 items-center gap-2">
                             <Checkbox
-                              id={id}
-                              checked={isIncluded}
-                              onCheckedChange={() => toggle(file.path)}
+                              id={`bundle-file-${embeddingsScript.path}`}
+                              checked={!excluded.has(embeddingsScript.path)}
+                              onCheckedChange={() => toggle(embeddingsScript.path)}
                             />
                             <Label
-                              htmlFor={id}
+                              htmlFor={`bundle-file-${embeddingsScript.path}`}
                               className="cursor-pointer truncate font-mono text-xs"
-                              title={displayPath}
+                              title={embeddingsScript.path}
                             >
-                              {displayPath}
+                              {embeddingsScript.path}
                             </Label>
+                            <Badge variant="secondary" className="shrink-0 text-[10px]">
+                              gerado
+                            </Badge>
                           </div>
                           <span className="shrink-0 font-mono text-[11px] text-slate-11">
                             {formatBytes(
-                              new TextEncoder().encode(file.content).length,
+                              new TextEncoder().encode(embeddingsScript.content).length,
                             )}
                           </span>
                         </li>
-                      );
-                    })
+                      )}
+                    </>
                   )}
                 </ul>
               </ScrollArea>
