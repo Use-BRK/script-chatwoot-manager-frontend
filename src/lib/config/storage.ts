@@ -51,6 +51,9 @@ export function loadConfig(): AppConfig | null {
             data.scriptsPaths = [];
           }
         }
+        if (!Array.isArray(data.embeddings)) {
+          data.embeddings = [];
+        }
         stored = data;
       }
     }

@@ -12,6 +12,15 @@ const pathsField = z
   })
   .default([]);
 
+export const embeddingSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1, "Título obrigatório"),
+  url: z.string().url("URL inválida"),
+  icon: z.string().min(1, "Ícone obrigatório"),
+});
+
+export type Embedding = z.infer<typeof embeddingSchema>;
+
 export const configSchema = z.object({
   githubToken: z
     .string()
@@ -25,6 +34,7 @@ export const configSchema = z.object({
   bundleApiUrl: z.string().url("URL inválida"),
   bundleApiKey: z.string().min(1, "API key obrigatória"),
   stripComments: z.boolean().default(false),
+  embeddings: z.array(embeddingSchema).default([]),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
@@ -33,4 +43,5 @@ export const defaultConfig: Partial<AppConfig> = {
   branch: "main",
   scriptsPaths: [],
   stripComments: false,
+  embeddings: [],
 };

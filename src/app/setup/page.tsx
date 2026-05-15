@@ -4,13 +4,17 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Icon } from "@iconify/react";
 import {
   Boxes,
   Check,
+  ExternalLink,
   FolderSearch,
   Loader2,
+  Pencil,
   Plus,
   ShieldCheck,
+  Trash2,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -26,7 +30,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { configSchema, type AppConfig } from "@/lib/config/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { IconPicker } from "@/components/ui/icon-picker";
+import {
+  configSchema,
+  type AppConfig,
+  type Embedding,
+} from "@/lib/config/schema";
 import { useConfig } from "@/hooks/use-config";
 import { GitHubClient } from "@/lib/github/client";
 import { fetchScriptStatus } from "@/lib/bundle/api";
@@ -61,11 +78,27 @@ export default function SetupPage() {
       repository: "",
       bundleApiUrl: "",
       bundleApiKey: "",
+      embeddings: [],
     },
   });
 
   // Estado local para o input de novo path
   const [pathInput, setPathInput] = React.useState("");
+
+  // Estado do dialog de embedding
+  const [embeddingDialog, setEmbeddingDialog] = React.useState<{
+    open: boolean;
+    editingId: string | null;
+    title: string;
+    url: string;
+    icon: string;
+  }>({
+    open: false,
+    editingId: null,
+    title: "",
+    url: "",
+    icon: "",
+  });
 
   React.useEffect(() => {
     const source = config ?? envOverrides;
@@ -73,6 +106,9 @@ export default function SetupPage() {
     // garante compatibilidade com config salva no formato antigo
     const scriptsPaths = Array.isArray(source.scriptsPaths)
       ? source.scriptsPaths
+      : [];
+    const embeddings = Array.isArray(source.embeddings)
+      ? source.embeddings
       : [];
     form.reset({
       branch: "main",
@@ -83,6 +119,7 @@ export default function SetupPage() {
       bundleApiKey: "",
       ...source,
       scriptsPaths,
+      embeddings,
     });
   }, [config, envOverrides, form]);
 
@@ -105,6 +142,80 @@ export default function SetupPage() {
       existing.filter((x) => x !== p),
       { shouldDirty: true },
     );
+  };
+
+  const currentEmbeddings = form.watch("embeddings") ?? [];
+
+  const openNewEmbedding = () => {
+    setEmbeddingDialog({
+      open: true,
+      editingId: null,
+      title: "",
+      url: "",
+      icon: "",
+    });
+  };
+
+  const openEditEmbedding = (e: Embedding) => {
+    setEmbeddingDialog({
+      open: true,
+      editingId: e.id,
+      title: e.title,
+      url: e.url,
+      icon: e.icon,
+    });
+  };
+
+  const removeEmbedding = (id: string) => {
+    const existing = form.getValues("embeddings") ?? [];
+    form.setValue(
+      "embeddings",
+      existing.filter((e) => e.id !== id),
+      { shouldDirty: true },
+    );
+  };
+
+  const saveEmbedding = () => {
+    const title = embeddingDialog.title.trim();
+    const url = embeddingDialog.url.trim();
+    const icon = embeddingDialog.icon.trim();
+
+    if (!title) {
+      toast({ variant: "destructive", title: "Informe o título" });
+      return;
+    }
+    try {
+      new URL(url);
+    } catch {
+      toast({ variant: "destructive", title: "URL inválida" });
+      return;
+    }
+    if (!icon) {
+      toast({ variant: "destructive", title: "Escolha um ícone" });
+      return;
+    }
+
+    const existing = form.getValues("embeddings") ?? [];
+    if (embeddingDialog.editingId) {
+      form.setValue(
+        "embeddings",
+        existing.map((e) =>
+          e.id === embeddingDialog.editingId
+            ? { ...e, title, url, icon }
+            : e,
+        ),
+        { shouldDirty: true },
+      );
+    } else {
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `emb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      form.setValue("embeddings", [...existing, { id, title, url, icon }], {
+        shouldDirty: true,
+      });
+    }
+    setEmbeddingDialog((s) => ({ ...s, open: false }));
   };
 
   const onSubmit = (values: AppConfig) => {
@@ -354,6 +465,73 @@ export default function SetupPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Embeddings</CardTitle>
+              <CardDescription>
+                Links hospedados que aparecem como atalhos na barra superior.
+                Cada embedding tem título, URL e um ícone do Fluent System Icons.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {currentEmbeddings.length > 0 && (
+                <ul className="space-y-2">
+                  {currentEmbeddings.map((e) => (
+                    <li
+                      key={e.id}
+                      className="flex items-center gap-3 rounded-md border border-border bg-slate-2 px-3 py-2"
+                    >
+                      <Icon
+                        icon={e.icon}
+                        className="h-5 w-5 shrink-0 text-foreground"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {e.title}
+                        </p>
+                        <p className="truncate font-mono text-[11px] text-slate-9">
+                          {e.url}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => openEditEmbedding(e)}
+                          aria-label={`Editar ${e.title}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive-text hover:bg-destructive-subtle"
+                          onClick={() => removeEmbedding(e.id)}
+                          aria-label={`Remover ${e.title}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={openNewEmbedding}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar embedding
+              </Button>
+            </CardContent>
+          </Card>
+
           <CardFooter className="flex gap-2 px-0">
             <Button
               type="button"
@@ -377,6 +555,78 @@ export default function SetupPage() {
           </CardFooter>
         </form>
       </main>
+
+      <Dialog
+        open={embeddingDialog.open}
+        onOpenChange={(open) =>
+          setEmbeddingDialog((s) => ({ ...s, open }))
+        }
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {embeddingDialog.editingId
+                ? "Editar embedding"
+                : "Adicionar embedding"}
+            </DialogTitle>
+            <DialogDescription>
+              Atalhos aparecem na barra superior. O título é exibido como
+              tooltip e o ícone vem do conjunto Fluent System Icons.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Título</Label>
+              <Input
+                value={embeddingDialog.title}
+                onChange={(e) =>
+                  setEmbeddingDialog((s) => ({ ...s, title: e.target.value }))
+                }
+                placeholder="Ex.: Dashboard de métricas"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>URL do embedding</Label>
+              <Input
+                value={embeddingDialog.url}
+                onChange={(e) =>
+                  setEmbeddingDialog((s) => ({ ...s, url: e.target.value }))
+                }
+                placeholder="https://..."
+                className="font-mono text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Ícone</Label>
+              <IconPicker
+                value={embeddingDialog.icon}
+                onChange={(icon) =>
+                  setEmbeddingDialog((s) => ({ ...s, icon }))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setEmbeddingDialog((s) => ({ ...s, open: false }))
+              }
+            >
+              Cancelar
+            </Button>
+            <Button onClick={saveEmbedding}>
+              <ExternalLink className="h-3.5 w-3.5" />
+              {embeddingDialog.editingId ? "Salvar alterações" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -482,6 +732,7 @@ function FolderFetcher({ form, currentPaths, addPath, removePath }: FolderFetche
         bundleApiUrl: form.getValues("bundleApiUrl") || "https://placeholder.test",
         bundleApiKey: form.getValues("bundleApiKey") || "placeholder",
         stripComments: false,
+        embeddings: [],
       });
       const result = await client.listRootDirectories();
       setDirs(result);

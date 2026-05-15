@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 import { Cog, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useConfig } from "@/hooks/use-config";
 import { StatusIndicator } from "./status-indicator";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -13,11 +15,35 @@ interface Props {
 }
 
 export function TopBar({ onDeploy, deployDisabled }: Props) {
+  const { config } = useConfig();
+  const embeddings = config?.embeddings ?? [];
+
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4">
       <div />
 
       <div className="flex items-center gap-3">
+        {embeddings.length > 0 && (
+          <>
+            <div className="flex items-center gap-1">
+              {embeddings.map((e) => (
+                <Button
+                  key={e.id}
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    window.open(e.url, "_blank", "noopener,noreferrer")
+                  }
+                  aria-label={e.title}
+                  title={e.title}
+                >
+                  <Icon icon={e.icon} className="h-4 w-4" />
+                </Button>
+              ))}
+            </div>
+            <Separator orientation="vertical" className="h-6" />
+          </>
+        )}
         <StatusIndicator />
         <Separator orientation="vertical" className="h-6" />
         <Button
