@@ -15,11 +15,7 @@ const pathsField = z
 export const configSchema = z.object({
   githubToken: z
     .string()
-    .min(20, "Token muito curto")
-    .regex(
-      /^(ghp_|github_pat_|gho_|ghs_|ghu_)/,
-      "Formato do PAT inválido — deve começar com ghp_, github_pat_, etc.",
-    ),
+    .min(1, "Token obrigatório"),
   repository: z
     .string()
     .regex(/^[^/\s]+\/[^/\s]+$/, "Formato deve ser owner/repo"),
